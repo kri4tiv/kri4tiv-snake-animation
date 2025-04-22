@@ -2,125 +2,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>KRI4TIV Snake Ultra</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background-color: transparent;
-      width: 100%;
-      height: 100%;
+      background: #E2E2E2;
       overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     canvas {
       display: block;
-      background-color: transparent;
+      background: transparent;
     }
   </style>
 </head>
 <body>
-<canvas id="snakeCanvas"></canvas>
+<canvas id="snakeCanvas" width="800" height="200"></canvas>
 <script>
-  const canvas = document.getElementById("snakeCanvas");
-  const ctx = canvas.getContext("2d");
+const canvas = document.getElementById('snakeCanvas');
+const ctx = canvas.getContext('2d');
 
-  canvas.width = window.innerWidth;
-  canvas.height = 200;
+let letters = "KRI4TIV".split('').map((char, i) => ({
+  char,
+  x: 150 + i * 90,
+  y: 100,
+  dx: 0,
+  dy: 0,
+  eaten: false
+}));
 
-  const letters = "KRI4TIV".split("").map((char, i) => ({
-    char,
-    x: 150 + i * 80,
-    y: 100,
-    eaten: false
-  }));
+let snake = {
+  x: -40,
+  y: 100,
+  size: 10,
+  speed: 2,
+  eatingIndex: 0,
+  state: "eating"
+};
 
-  let snake = {
-    x: -40,
-    y: 100,
-    size: 10,
-    speed: 1.6,
-    eatingIndex: 0,
-    state: "eating"
-  };
+let showingHireMe = false;
+let mouseX = 0;
 
-  let showingHireMe = false;
-  let loopTimeout = null;
+document.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+});
 
-  function drawText(text, xOffset = 150) {
-    ctx.fillStyle = "#E2E2E2";
-    ctx.shadowColor = "#9146FF";
-    ctx.shadowBlur = 10;
-    ctx.font = "bold 48px Arial";
-    for (let i = 0; i < text.length; i++) {
-      ctx.fillText(text[i], xOffset + i * 80, 105);
+function drawText(text, xOffset = 150) {
+  ctx.fillStyle = "#E2E2E2";
+  ctx.shadowColor = "#9146FF";
+  ctx.shadowBlur = 10;
+  ctx.font = "bold 48px Arial";
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    let targetX = xOffset + i * 90;
+    let dx = (mouseX - targetX) / 150;
+    dx = Math.max(Math.min(dx, 1), -1) * 5;
+
+    ctx.save();
+    ctx.translate(dx, 0);
+    ctx.fillText(char, targetX, 110);
+    ctx.restore();
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!showingHireMe) {
+    drawText("KRI4TIV");
+    for (let i = 0; i < snake.eatingIndex; i++) {
+      const l = letters[i];
+      ctx.clearRect(l.x - 20, l.y - 50, 60, 70);
     }
+  } else {
+    drawText("HIRE ME", 200);
   }
 
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  ctx.arc(snake.x, snake.y, snake.size, 0, Math.PI * 2);
+  ctx.fillStyle = "#E2E2E2";
+  ctx.shadowColor = "#9146FF";
+  ctx.shadowBlur = 12;
+  ctx.fill();
 
-    if (!showingHireMe) {
-      drawText("KRI4TIV");
-
-      // Hide eaten letters
-      for (let i = 0; i < snake.eatingIndex; i++) {
-        const l = letters[i];
-        ctx.clearRect(l.x - 20, l.y - 40, 50, 60);
+  if (snake.state === "eating") {
+    if (snake.eatingIndex < letters.length) {
+      const target = letters[snake.eatingIndex];
+      if (snake.x >= target.x) {
+        target.eaten = true;
+        snake.size += 4;
+        snake.speed *= 0.9;
+        snake.eatingIndex++;
       }
     } else {
-      drawText("HIRE ME", 200);
+      snake.state = "exit";
     }
-
-    // Snake
-    ctx.beginPath();
-    ctx.arc(snake.x, snake.y, snake.size, 0, Math.PI * 2);
-    ctx.fillStyle = "#E2E2E2";
-    ctx.shadowColor = "#9146FF";
-    ctx.shadowBlur = 10;
-    ctx.fill();
-
-    if (snake.state === "eating") {
-      if (snake.eatingIndex < letters.length) {
-        const target = letters[snake.eatingIndex];
-        if (snake.x >= target.x) {
-          snake.size += 4;
-          snake.speed *= 0.9;
-          snake.eatingIndex++;
-        }
-      } else {
-        snake.state = "exit";
-      }
-    }
-
-    if (snake.state === "exit") {
-      snake.x += 2.5;
-      if (snake.x > canvas.width + 60 && !showingHireMe) {
-        showingHireMe = true;
-        loopTimeout = setTimeout(() => {
-          reset();
-        }, 3000);
-      }
-    } else {
-      snake.x += snake.speed;
-    }
-
-    requestAnimationFrame(draw);
   }
 
-  function reset() {
-    snake = {
-      x: -40,
-      y: 100,
-      size: 10,
-      speed: 1.6,
-      eatingIndex: 0,
-      state: "eating"
-    };
-    showingHireMe = false;
+  if (snake.state === "exit") {
+    snake.x += 2.5;
+    if (snake.x > canvas.width + 60 && !showingHireMe) {
+      showingHireMe = true;
+      setTimeout(() => reset(), 3000);
+    }
+  } else {
+    snake.x += snake.speed;
   }
 
-  draw();
+  requestAnimationFrame(draw);
+}
+
+function reset() {
+  snake = { x: -40, y: 100, size: 10, speed: 2, eatingIndex: 0, state: "eating" };
+  showingHireMe = false;
+  letters.forEach(l => l.eaten = false);
+}
+
+draw();
 </script>
 </body>
 </html>
