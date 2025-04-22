@@ -8,93 +8,122 @@
     body {
       margin: 0;
       padding: 0;
-      background-color: transparent;
+      background-color: #000;
       font-family: 'Arial', sans-serif;
-    }
-    .snake-container {
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: 180px;
-      overflow: hidden;
-      position: relative;
+      height: 100vh;
     }
+
     canvas {
-      background: transparent;
+      background-color: #000;
       display: block;
     }
-    .kri4tiv-label {
+
+    .popup {
       position: absolute;
-      top: 50%;
+      top: 20%;
       left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 48px;
-      color: rgba(255, 255, 255, 0.05);
+      transform: translateX(-50%);
+      background: #ffde59;
+      color: #000;
+      padding: 10px 20px;
       font-weight: bold;
-      letter-spacing: 8px;
-      pointer-events: none;
-      user-select: none;
+      font-size: 18px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #ffde59;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 10;
     }
-    .joke-tag {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #666;
-      font-style: italic;
+
+    .popup.show {
+      opacity: 1;
     }
   </style>
 </head>
 <body>
-  <div class="snake-container">
-    <div class="kri4tiv-label">KRI4TIV</div>
-    <canvas id="kri4tivCanvas" width="600" height="150"></canvas>
-    <div class="joke-tag">hire me, i’m creative :D</div>
-  </div>
-
+  <div class="popup" id="message">hire me, i'm creative :D</div>
+  <canvas id="snakeCanvas" width="800" height="200"></canvas>
   <script>
-    const canvas = document.getElementById('kri4tivCanvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById("snakeCanvas");
+    const ctx = canvas.getContext("2d");
+    const messageBox = document.getElementById("message");
 
-    const path = [
-      { x: 50, y: 75 },
-      { x: 100, y: 30 },
-      { x: 150, y: 75 },
-      { x: 200, y: 30 },
-      { x: 250, y: 75 },
-      { x: 300, y: 30 },
-      { x: 350, y: 75 },
-      { x: 400, y: 30 },
-      { x: 450, y: 75 },
-      { x: 500, y: 30 },
-      { x: 550, y: 75 }
-    ];
+    const word = "KRI4TIV".split('');
+    const letters = word.map((letter, i) => ({
+      char: letter,
+      x: 100 + i * 90,
+      y: 100,
+      eaten: false,
+    }));
 
-    let t = 0;
+    let snake = {
+      x: 0,
+      y: 100,
+      size: 10,
+      speed: 2,
+      eating: false,
+      eatenCount: 0,
+    };
+
+    let direction = 1;
+    let loopTimeout = null;
+
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx.shadowColor = '#9146FF';
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.moveTo(path[0].x, path[0].y);
-      for (let i = 1; i < path.length; i++) {
-        ctx.lineTo(path[i].x, path[i].y);
-      }
-      ctx.strokeStyle = '#9146FF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      // Draw letters
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 36px Arial";
+      letters.forEach(l => {
+        if (!l.eaten) ctx.fillText(l.char, l.x, l.y);
+      });
 
-      const pos = Math.floor(t) % path.length;
-      const dot = path[pos];
-
+      // Draw snake
       ctx.beginPath();
-      ctx.arc(dot.x, dot.y, 6, 0, 2 * Math.PI);
-      ctx.fillStyle = '#FFDE59';
-      ctx.shadowBlur = 0;
+      ctx.arc(snake.x, snake.y, snake.size, 0, Math.PI * 2);
+      ctx.fillStyle = "#9146FF";
+      ctx.shadowColor = "#9146FF";
+      ctx.shadowBlur = 10;
       ctx.fill();
 
-      t += 0.1;
-      requestAnimationFrame(draw);
+      // Eating check
+      letters.forEach((l, i) => {
+        if (!l.eaten && Math.abs(snake.x - l.x) < 20) {
+          l.eaten = true;
+          snake.size += 4;
+          snake.speed *= 0.9;
+          snake.eatenCount++;
+        }
+      });
+
+      // Movement
+      snake.x += snake.speed * direction;
+
+      // End condition
+      if (snake.eatenCount >= letters.length && snake.x > canvas.width + 40) {
+        showMessage();
+        resetLoop();
+      } else {
+        requestAnimationFrame(draw);
+      }
+    }
+
+    function showMessage() {
+      messageBox.classList.add("show");
+      setTimeout(() => {
+        messageBox.classList.remove("show");
+      }, 2500);
+    }
+
+    function resetLoop() {
+      loopTimeout = setTimeout(() => {
+        snake = { x: 0, y: 100, size: 10, speed: 2, eating: false, eatenCount: 0 };
+        letters.forEach(l => l.eaten = false);
+        draw();
+      }, 3000);
     }
 
     draw();
